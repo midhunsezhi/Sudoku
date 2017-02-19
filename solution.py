@@ -1,8 +1,10 @@
 assignments = []
+rows = 'ABCDEFGHI'
+cols = '123456789'
 
 def assign_value(values, box, value):
     """
-    Please use this function to update your values dictionary!
+    Use this function to update your values dictionary!
     Assigns a value to a given box. If it updates the board record it.
     """
     values[box] = value
@@ -14,6 +16,7 @@ def naked_twins(values):
     """Eliminate values using the naked twins strategy.
     Args:
         values(dict): a dictionary of the form {'box_name': '123456789', ...}
+    
 
     Returns:
         the values dictionary with the naked twins eliminated from peers.
@@ -24,7 +27,20 @@ def naked_twins(values):
 
 def cross(A, B):
     "Cross product of elements in A and elements in B."
-    pass
+    return [s+d for s in A for d in B]
+
+boxes = cross(rows, cols)
+row_units = [cross(r,cols) for r in rows]
+col_units = [cross(rows, c) for c in cols]
+square_units = [cross(rs, cs) for rs
+                in ('ABC', 'DEF', 'GHI') for cs
+                in ('123', '456', '789')]
+first_diagnal = [rows[i]+cols[i] for i in range(1,10)]
+second_diagnal = [rows[i]+cols[-i] for i in range(1,10)]
+diagnal_units = [first_diagnal, second_diagnal]
+unitlist = row_units + col_units + square_units + diagnal_units
+units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
+peers = dict(s, set(sum(units[s])) - set([s]) for s in boxes)
 
 def grid_values(grid):
     """
@@ -34,9 +50,17 @@ def grid_values(grid):
     Returns:
         A grid in dictionary form
             Keys: The boxes, e.g., 'A1'
-            Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
+            Values: The value in each box, e.g., '8'.
+            If the box has no value, then the value will be '123456789'.
     """
-    pass
+    sudoku_dict = {}
+    for i in range(81):
+        if grid[i] != '.':
+            sudoku_dict[boxes[i]] = grid[i]
+        else:
+            sudoku_dict[boxes[i]] = '123456789'
+
+    return sudoku_dict
 
 def display(values):
     """
@@ -44,10 +68,20 @@ def display(values):
     Args:
         values(dict): The sudoku in dictionary form
     """
-    pass
+    width = 1+max(len(values[s]) for s in boxes)
+    line = '+'.join(['-'*(width*3)]*3)
+    for r in rows:
+        print(''.join(values[r+c].center(width)+('|' if c in '36' else '')
+                      for c in cols))
+        if r in 'CF': print(line)
+    print
 
 def eliminate(values):
-    pass
+    solved_values = [box for box in values.keys() if len(values[box]) == 1]
+    for box in solved_values:
+        for peer in peers[box]:
+            values[peer] = values[peer].replace(values[box], '')
+    return values
 
 def only_choice(values):
     pass
