@@ -31,7 +31,7 @@ def naked_twins(values):
             twin_value = values[twin[0]]
             # Eliminate the naked twins as possibilities for their peers
             for box in unit:
-                if box not in [twin[0], twin[1]]:
+                if box not in twin:
                     assign_value(values, box,
                                  ''.join([ch for ch in values[box] if ch not in twin_value]))
 
