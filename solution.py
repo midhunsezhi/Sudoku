@@ -20,18 +20,22 @@ def naked_twins(values):
     Returns:
         the values dictionary with the naked twins eliminated from peers.
     """
+    # Iterate through all units (rows, columns, 3X3 squares and diagonals)
     for unit in unitlist:
-        twins = [(s, t) for s in unit for t in unit if values[s] == values[t] and len(values[s]) == 2]
+        # Find all instances of naked twins in each unit
+        twins = [(s, t) for s in unit for t in unit
+                 if s is not t
+                 and values[s] == values[t]
+                 and len(values[s]) == 2]
         for twin in twins:
             twin_value = values[twin[0]]
+            # Eliminate the naked twins as possibilities for their peers
             for box in unit:
-                if box not in twin:
-                    assign_value(values, box, ''.join([ch for ch in values[box] if ch not in twin_value]))
+                if box not in [twin[0], twin[1]]:
+                    assign_value(values, box,
+                                 ''.join([ch for ch in values[box] if ch not in twin_value]))
 
     return values
-
-    # Find all instances of naked twins
-    # Eliminate the naked twins as possibilities for their peers
 
 def cross(A, B):
     "Cross product of elements in A and elements in B."
@@ -42,8 +46,9 @@ boxes = cross(rows, cols)
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
-first_diagnal = [rows[i]+cols[i] for i in range(9)]
-second_diagnal = [rows[i]+cols[-1 * (i+1)] for i in range(9)]
+#find both diagonal boxes and form a list
+first_diagnal = [rows[i]+cols[i] for i in range(9)] # top-left to bottom-right diagonal
+second_diagnal = [rows[i]+cols[-1 * (i+1)] for i in range(9)] # top-right to bottom-left diagonal
 diagnal_units = [first_diagnal, second_diagnal]
 unitlist = row_units + column_units + square_units + diagnal_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
@@ -92,7 +97,7 @@ def eliminate(values):
     for box in solved_values:
         digit = values[box]
         for peer in peers[box]:
-            assign_value(values, peer, values[peer].replace(digit,''))
+            assign_value(values, peer, values[peer].replace(digit, ''))
     return values
 
 def only_choice(values):
@@ -108,6 +113,8 @@ def reduce_puzzle(values):
     while not stalled:
         solved_values_before = len([box for box in values.keys() if len(values[box]) == 1])
         values = eliminate(values)
+        #solve for the naked_twins constraint afer elimination
+        values = naked_twins(values)
         values = only_choice(values)
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
         stalled = solved_values_before == solved_values_after
@@ -119,11 +126,11 @@ def search(values):
     values = reduce_puzzle(values)
     if values is False:
         return False ## Failed earlier
-    if all(len(values[s]) == 1 for s in boxes): 
+    if all(len(values[s]) == 1 for s in boxes):
         return values ## Solved!
     # Choose one of the unfilled squares with the fewest possibilities
-    n,s = min((len(values[s]), s) for s in boxes if len(values[s]) > 1)
-    # Now use recurrence to solve each one of the resulting sudokus, and 
+    _, s = min((len(values[s]), s) for s in boxes if len(values[s]) > 1)
+    # Now use recurrence to solve each one of the resulting sudokus 
     for value in values[s]:
         new_sudoku = values.copy()
         assign_value(new_sudoku, s, value)
@@ -140,6 +147,7 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
+    # first convert the string to a dict and call the search function to solve the puzzle
     puzzle = grid_values(grid)
     return search(puzzle)
 
@@ -155,4 +163,4 @@ if __name__ == '__main__':
     except SystemExit:
         pass
     except:
-        print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
+        print('We could not visualize your board due to a pygame issue.')
