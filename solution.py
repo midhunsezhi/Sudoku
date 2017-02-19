@@ -16,11 +16,18 @@ def naked_twins(values):
     """Eliminate values using the naked twins strategy.
     Args:
         values(dict): a dictionary of the form {'box_name': '123456789', ...}
-    
 
     Returns:
         the values dictionary with the naked twins eliminated from peers.
     """
+    for unit in unitlist:
+        twins = [(s, t) for s in unit for t in unit if values[s] == values[t]]
+        for twin in twins:
+            twin_value = values[twin[0]]
+            for box in unit:
+                if box not in twin:
+                    values[box] = ''.join([ch for ch in values[box] if ch not in twin_value])
+    return values
 
     # Find all instances of naked twins
     # Eliminate the naked twins as possibilities for their peers
@@ -32,15 +39,15 @@ def cross(A, B):
 boxes = cross(rows, cols)
 row_units = [cross(r,cols) for r in rows]
 col_units = [cross(rows, c) for c in cols]
-square_units = [cross(rs, cs) for rs
-                in ('ABC', 'DEF', 'GHI') for cs
-                in ('123', '456', '789')]
-first_diagnal = [rows[i]+cols[i] for i in range(1,10)]
-second_diagnal = [rows[i]+cols[-i] for i in range(1,10)]
+square_units = [cross(rs, cs)
+                for rs in ('ABC', 'DEF', 'GHI')
+                for cs in ('123', '456', '789')]
+first_diagnal = [rows[i]+cols[i] for i in range(9)]
+second_diagnal = [rows[i]+cols[-1 * (i+1)] for i in range(9)]
 diagnal_units = [first_diagnal, second_diagnal]
 unitlist = row_units + col_units + square_units + diagnal_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
-peers = dict(s, set(sum(units[s])) - set([s]) for s in boxes)
+peers = dict((s, set(sum(units[s],[])) - set([s])) for s in boxes)
 
 def grid_values(grid):
     """
@@ -68,6 +75,9 @@ def display(values):
     Args:
         values(dict): The sudoku in dictionary form
     """
+    if values is False:
+        print("This puzzle can't be solved")
+        return
     width = 1+max(len(values[s]) for s in boxes)
     line = '+'.join(['-'*(width*3)]*3)
     for r in rows:
@@ -88,7 +98,7 @@ def only_choice(values):
         for digit in '123456789':
             dboxes = [box for box in unit if digit in values[box]]
             if len(dboxes) == 1:
-                value[dboxes[0]] = digit
+                values[dboxes[0]] = digit
     return values
 
 def reduce_puzzle(values):
@@ -98,6 +108,7 @@ def reduce_puzzle(values):
         solved_boxes_before = len([box for box in values.keys() if len(values[box]) == 1])
         values = eliminate(values)
         values = only_choice(values)
+        values = naked_twins(values)
         solved_boxes_after = len([box for box in values.keys() if len(values[box]) == 1])
         stalled = solved_boxes_before == solved_boxes_after
         if len([box for box in values.keys() if len(values[box]) == 0]) > 0:
@@ -106,7 +117,20 @@ def reduce_puzzle(values):
     return values
 
 def search(values):
-    
+    values = reduce_puzzle(values)
+    if values is False:
+        return False
+    if all(len(values[box]) == 1 for box in boxes):
+        return values
+
+    _, min_box = min((len(values[box]), box) for box in boxes if len(values[box]) > 1)
+
+    for ch in values[min_box]:
+        values_copy = values.copy()
+        values_copy[min_box] = ch
+        attempt = search(values)
+        if attempt:
+            return attempt
 
 def solve(grid):
     """
@@ -117,6 +141,9 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
+    puzzle = grid_values(grid)
+    return search(puzzle)
+
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
