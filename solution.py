@@ -84,13 +84,29 @@ def eliminate(values):
     return values
 
 def only_choice(values):
-    pass
+    for unit in unitlist:
+        for digit in '123456789':
+            dboxes = [box for box in unit if digit in values[box]]
+            if len(dboxes) == 1:
+                value[dboxes[0]] = digit
+    return values
 
 def reduce_puzzle(values):
-    pass
+    solved_boxes = [box for box in values.keys() if len(values[box]) == 1]
+    stalled = False
+    while not stalled:
+        solved_boxes_before = len([box for box in values.keys() if len(values[box]) == 1])
+        values = eliminate(values)
+        values = only_choice(values)
+        solved_boxes_after = len([box for box in values.keys() if len(values[box]) == 1])
+        stalled = solved_boxes_before == solved_boxes_after
+        if len([box for box in values.keys() if len(values[box]) == 0]) > 0:
+            return False
+
+    return values
 
 def search(values):
-    pass
+    
 
 def solve(grid):
     """
